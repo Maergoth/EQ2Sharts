@@ -2,6 +2,8 @@
 
 EQ2Sharts is a single-file ACT (Advanced Combat Tracker) plugin that manages a player queue via in-game chat. It was designed for distributing Hearts (or any item/buff) in EQ2 raids, letting players request a spot in line and operators dequeue them as they're served.
 
+Created by Sichi, injected with nonsense by Maergoth and Kaizar.
+
 ## Features
 
 - **Chat-driven queue** — Players enqueue themselves by typing a trigger phrase in a monitored channel. An operator dequeues them by name when served.
