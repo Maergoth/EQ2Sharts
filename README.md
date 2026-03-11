@@ -14,6 +14,9 @@ https://discord.gg/reverb
 4. Customize the "channels" you're watching, and set the "Enqueue" and "Dequeue" text to match
 5. Activity Log can provide some hints if it's not working
 
+<img width="647" height="438" alt="image" src="https://github.com/user-attachments/assets/ae589164-71dc-467b-81b4-d2388103c29a" />
+
+
 ## Features
 
 - **Chat-driven queue** — Players enqueue themselves by typing a trigger phrase in a monitored channel. An operator dequeues them by name when served.
