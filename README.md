@@ -10,7 +10,6 @@ Created by Sichi, injected with nonsense by Maergoth and Kaizar.
 - **Overlay window** — A topmost, resizable overlay displays the numbered queue over the game. Supports click-through mode, adjustable opacity, font scaling, and custom background/foreground colors.
 - **Multiple channels** — Monitor several chat channels simultaneously (raid, group, custom channels) by listing one per line.
 - **Flexible chat format support** — Handles both EQ2 `tells` and `says to the` syntaxes, with or without channel numbers.
-- **Self-detection** — Recognizes when "You" are the speaker, so the operator can enqueue themselves.
 - **Wait time display** — Optional per-player wait timer shown on the overlay, updating live every second.
 - **Average wait time** — Logged to the activity log on each dequeue, tracking a running average across the session.
 - **Invert order** — Checkbox to flip the overlay display from top-to-bottom to bottom-to-top.
