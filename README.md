@@ -4,6 +4,8 @@ EQ2Sharts is a single-file ACT (Advanced Combat Tracker) plugin that manages a p
 
 Created by Sichi, injected with nonsense by Maergoth and Kaizar.
 
+https://discord.gg/reverb
+
 ## Installation
 
 1. Download EQ2Sharts.cs
