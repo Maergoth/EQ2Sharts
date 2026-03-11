@@ -71,12 +71,6 @@ A timestamp (`DateTime.Now`) is recorded at enqueue time. On dequeue, the elapse
 
 The plugin uses ACT's `SettingsSerializer` to bind UI controls to an XML config file (`%APPDATA%\Advanced Combat Tracker\Config\EQ2Sharts.config.xml`). All text boxes, checkboxes, trackbars, and the overlay bounds are serialized on plugin exit and restored on load.
 
-## Installation
-
-1. Copy `EQ2Sharts.cs` into ACT via **Plugins → Plugin Listing → Browse** (select the `.cs` file directly).
-2. ACT compiles and loads the plugin. The **EQ2Sharts** tab appears with configuration options.
-3. Enter your channel name(s), adjust patterns if needed, and enable the overlay.
-
 ## Configuration
 
 | Setting | Description |
