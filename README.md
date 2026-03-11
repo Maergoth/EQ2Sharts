@@ -8,7 +8,7 @@ https://discord.gg/reverb
 
 ## Installation
 
-1. [Download EQ2Sharts.cs](https://raw.githubusercontent.com/Maergoth/EQ2Sharts/main/EQ2Sharts.cs)
+1. [Right-Click and Save As to Download EQ2Sharts.cs](https://raw.githubusercontent.com/Maergoth/EQ2Sharts/main/EQ2Sharts.cs)
 2. Go to the "plugins" tab on ACT and select the file
 3. Import it, make sure the checkbox is active
 4. Customize the "channels" you're watching, and set the "Enqueue" and "Dequeue" text to match
