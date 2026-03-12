@@ -18,6 +18,8 @@ namespace EQ2Sharts
         private readonly Dictionary<string, DateTime> EnqueueTimes = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
         private readonly object Sync = new object();
         private Timer WaitTimeTimer;
+        private double TotalWaitSeconds;
+        private int DequeueCount;
 
         private Regex ChannelMsgRegex;
         private Regex[] EnqueuePatterns = new Regex[0];
@@ -31,6 +33,7 @@ namespace EQ2Sharts
         private TextBox TxtEnqueuePatterns;
         private TextBox TxtDequeuePatterns;
         private TextBox TxtChannelName;
+        private TextBox TxtYourName;
         private TextBox TxtLog;
         private CheckBox ChkOverlayVisible;
         private CheckBox ChkClickThrough;
@@ -64,12 +67,13 @@ namespace EQ2Sharts
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 2,
-                RowCount = 2,
+                RowCount = 3,
                 Padding = new Padding(4)
             };
-            mainTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            mainTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            mainTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60f));
+            mainTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40f));
             mainTable.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            mainTable.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             mainTable.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
             // === Left column: pattern settings ===
@@ -80,6 +84,14 @@ namespace EQ2Sharts
                 WrapContents = false,
                 AutoScroll = true,
                 Padding = new Padding(2)
+            };
+
+            var lblYourName = new Label { Text = "Your Character Name:", AutoSize = true };
+            TxtYourName = new TextBox
+            {
+                Name = "txtYourName",
+                Size = new Size(280, 20),
+                Text = ""
             };
 
             var lblChannel = new Label { Text = "Channel Names (one per line):", AutoSize = true };
@@ -116,16 +128,17 @@ namespace EQ2Sharts
             {
                 Text = "Clear Queue",
                 AutoSize = true,
-                Margin = new Padding(0, 6, 0, 0)
+                Margin = new Padding(4, 6, 0, 4)
             };
 
+            leftPanel.Controls.Add(lblYourName);
+            leftPanel.Controls.Add(TxtYourName);
             leftPanel.Controls.Add(lblChannel);
             leftPanel.Controls.Add(TxtChannelName);
             leftPanel.Controls.Add(lblEnqueue);
             leftPanel.Controls.Add(TxtEnqueuePatterns);
             leftPanel.Controls.Add(lblDequeue);
             leftPanel.Controls.Add(TxtDequeuePatterns);
-            leftPanel.Controls.Add(BtnClearQueue);
 
             // === Right column: overlay settings ===
             var rightPanel = new FlowLayoutPanel
@@ -263,6 +276,10 @@ namespace EQ2Sharts
             mainTable.Controls.Add(leftPanel, 0, 0);
             mainTable.Controls.Add(rightPanel, 1, 0);
 
+            // === Button row (spans both columns) ===
+            mainTable.Controls.Add(BtnClearQueue, 0, 1);
+            mainTable.SetColumnSpan(BtnClearQueue, 2);
+
             // === Bottom row: activity log (spans both columns) ===
             var logPanel = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
             var lblLog = new Label { Text = "Activity Log:", AutoSize = true, Dock = DockStyle.Top };
@@ -276,13 +293,13 @@ namespace EQ2Sharts
             };
             logPanel.Controls.Add(TxtLog);
             logPanel.Controls.Add(lblLog);
-            mainTable.Controls.Add(logPanel, 0, 1);
+            mainTable.Controls.Add(logPanel, 0, 2);
             mainTable.SetColumnSpan(logPanel, 2);
 
             #if DEBUG
-            mainTable.RowStyles[1] = new RowStyle(SizeType.Absolute, 160);
+            mainTable.RowStyles[2] = new RowStyle(SizeType.Absolute, 160);
             #else
-            mainTable.RowStyles[1] = new RowStyle(SizeType.Absolute, 0);
+            mainTable.RowStyles[2] = new RowStyle(SizeType.Absolute, 0);
             logPanel.Visible = false;
             #endif
 
@@ -356,23 +373,12 @@ namespace EQ2Sharts
 
             ChkShowWaitTime.CheckedChanged += delegate
             {
-                if (ChkShowWaitTime.Checked)
-                {
-                    if (WaitTimeTimer == null)
-                    {
-                        WaitTimeTimer = new Timer();
-                        WaitTimeTimer.Interval = 1000;
-                        WaitTimeTimer.Tick += delegate { RefreshQueueDisplay(); };
-                    }
-                    WaitTimeTimer.Start();
-                }
-                else
-                {
-                    if (WaitTimeTimer != null)
-                        WaitTimeTimer.Stop();
-                }
-                RefreshQueueDisplay();
+                EnsureWaitTimeTimer();
             };
+
+            // Start the timer now if the setting was loaded as checked
+            if (ChkShowWaitTime.Checked)
+                EnsureWaitTimeTimer();
 
             TrkOpacity.ValueChanged += delegate
             {
@@ -453,6 +459,26 @@ namespace EQ2Sharts
             LblStatus.Text = "EQ2Sharts Plugin Exited";
         }
 
+        private void EnsureWaitTimeTimer()
+        {
+            if (ChkShowWaitTime.Checked)
+            {
+                if (WaitTimeTimer == null)
+                {
+                    WaitTimeTimer = new Timer();
+                    WaitTimeTimer.Interval = 1000;
+                    WaitTimeTimer.Tick += delegate { RefreshQueueDisplay(); };
+                }
+                WaitTimeTimer.Start();
+            }
+            else
+            {
+                if (WaitTimeTimer != null)
+                    WaitTimeTimer.Stop();
+            }
+            RefreshQueueDisplay();
+        }
+
         private void OnLogLineRead(bool isImport, LogLineEventArgs logInfo)
         {
             if (isImport)
@@ -476,6 +502,19 @@ namespace EQ2Sharts
             // Group 1 = name from \aPC link, Group 2 = "You", Group 3 = message content
             var sender = channelMatch.Groups[1].Success ? channelMatch.Groups[1].Value : channelMatch.Groups[2].Value;
             var content = channelMatch.Groups[3].Value;
+
+            // Replace "You" with the configured character name
+            if (string.Equals(sender, "You", StringComparison.OrdinalIgnoreCase))
+            {
+                var yourName = string.Empty;
+                if (InvokeRequired)
+                    Invoke(new Action(() => { yourName = TxtYourName.Text.Trim(); }));
+                else
+                    yourName = TxtYourName.Text.Trim();
+
+                if (yourName.Length > 0)
+                    sender = yourName;
+            }
 
             AppendLog(string.Format("[DEBUG] Channel message - sender=\"{0}\", content=\"{1}\"", sender, content));
 
@@ -541,7 +580,17 @@ namespace EQ2Sharts
                     AppendLog(string.Format("Player \"{0}\" is not in the queue.", playerName));
                     return;
                 }
-                EnqueueTimes.Remove(playerName);
+
+                // Calculate wait time before removing the timestamp
+                DateTime enqTime;
+                TimeSpan waited = TimeSpan.Zero;
+                if (EnqueueTimes.TryGetValue(playerName, out enqTime))
+                {
+                    waited = DateTime.Now - enqTime;
+                    EnqueueTimes.Remove(playerName);
+                    TotalWaitSeconds += waited.TotalSeconds;
+                    DequeueCount++;
+                }
 
                 LinkedListNode<string> node = PlayerQueue.First;
                 while (node != null)
@@ -554,10 +603,24 @@ namespace EQ2Sharts
                     node = node.Next;
                 }
 
-                AppendLog(string.Format("Player \"{0}\" dequeued. Queue size: {1}.", playerName, PlayerQueue.Count));
+                AppendLog(string.Format("Player \"{0}\" dequeued. Wait: {1}. Queue size: {2}.", playerName, FormatTimeSpan(waited), PlayerQueue.Count));
+                if (DequeueCount > 0)
+                {
+                    var avg = TimeSpan.FromSeconds(TotalWaitSeconds / DequeueCount);
+                    AppendLog(string.Format("Average wait time: {0} ({1} served).", FormatTimeSpan(avg), DequeueCount));
+                }
             }
 
             RefreshQueueDisplay();
+        }
+
+        private static string FormatTimeSpan(TimeSpan ts)
+        {
+            if (ts.TotalHours >= 1)
+                return ((int)ts.TotalHours).ToString() + "h " + ts.Minutes.ToString() + "m " + ts.Seconds.ToString() + "s";
+            if (ts.TotalMinutes >= 1)
+                return ts.Minutes.ToString() + "m " + ts.Seconds.ToString() + "s";
+            return ts.Seconds.ToString() + "s";
         }
 
         private void RebuildPatterns()
@@ -757,6 +820,7 @@ namespace EQ2Sharts
 
         private void LoadSettings()
         {
+            XmlSettings.AddControlSetting(TxtYourName.Name, TxtYourName);
             XmlSettings.AddControlSetting(TxtChannelName.Name, TxtChannelName);
             XmlSettings.AddControlSetting(TxtEnqueuePatterns.Name, TxtEnqueuePatterns);
             XmlSettings.AddControlSetting(TxtDequeuePatterns.Name, TxtDequeuePatterns);
