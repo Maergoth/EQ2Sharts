@@ -1075,11 +1075,22 @@ namespace EQ2Sharts
                     return;
                 }
 
+                // Check if the remote version matches the current version
+                var versionMatch = Regex.Match(newContent, @"PluginVersion\s*=\s*""([^""]+)""");
+                if (versionMatch.Success && versionMatch.Groups[1].Value == PluginVersion)
+                {
+                    AppendLog("Plugin is already up to date (v" + PluginVersion + ").");
+                    MessageBox.Show("You are already running the latest version (v" + PluginVersion + ").",
+                        "No Update Needed", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                var remoteVersion = versionMatch.Success ? versionMatch.Groups[1].Value : "unknown";
                 File.WriteAllText(pluginPath, newContent, Encoding.UTF8);
-                AppendLog("Plugin file updated: " + pluginPath);
+                AppendLog("Plugin file updated: " + pluginPath + " (v" + PluginVersion + " -> v" + remoteVersion + ")");
 
                 var result = MessageBox.Show(
-                    "Plugin updated successfully!\n\n" +
+                    "Plugin updated from v" + PluginVersion + " to v" + remoteVersion + "!\n\n" +
                     "The plugin file has been replaced. Would you like to reload it now?\n" +
                     "(This will disable and re-enable the plugin.)",
                     "EQ2Sharts Updated",
