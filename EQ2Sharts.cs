@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -13,6 +14,8 @@ namespace EQ2Sharts
 {
     public class EQ2ShartsPlugin : UserControl, IActPluginV1
     {
+        private const string PluginVersion = "1.0";
+
         private readonly LinkedList<string> PlayerQueue = new LinkedList<string>();
         private readonly Dictionary<string, bool> PlayerSet = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, DateTime> EnqueueTimes = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
@@ -50,6 +53,7 @@ namespace EQ2Sharts
         private Button BtnClearQueue;
         private Button BtnBgColor;
         private Button BtnFgColor;
+        private Button BtnUpdatePlugin;
         private TextBox TxtBgColor;
         private TextBox TxtFgColor;
 
@@ -93,6 +97,15 @@ namespace EQ2Sharts
                 Padding = new Padding(2)
             };
 
+            var lblVersion = new Label
+            {
+                Text = "EQ2Sharts v" + PluginVersion,
+                AutoSize = true,
+                Font = new Font(Font.FontFamily, 10f, FontStyle.Bold),
+                Margin = new Padding(0, 0, 0, 6)
+            };
+            leftPanel.Controls.Add(lblVersion);
+
             var lblYourName = new Label { Text = "Your Character Name:", AutoSize = true };
             TxtYourName = new TextBox
             {
@@ -134,6 +147,13 @@ namespace EQ2Sharts
             BtnClearQueue = new Button
             {
                 Text = "Clear Queue",
+                AutoSize = true,
+                Margin = new Padding(4, 6, 0, 4)
+            };
+
+            BtnUpdatePlugin = new Button
+            {
+                Text = "Update Plugin",
                 AutoSize = true,
                 Margin = new Padding(4, 6, 0, 4)
             };
@@ -311,8 +331,17 @@ namespace EQ2Sharts
             mainTable.Controls.Add(rightPanel, 1, 0);
 
             // === Button row (spans both columns) ===
-            mainTable.Controls.Add(BtnClearQueue, 0, 1);
-            mainTable.SetColumnSpan(BtnClearQueue, 2);
+            var buttonRow = new FlowLayoutPanel
+            {
+                FlowDirection = FlowDirection.LeftToRight,
+                AutoSize = true,
+                WrapContents = false,
+                Margin = new Padding(0)
+            };
+            buttonRow.Controls.Add(BtnClearQueue);
+            buttonRow.Controls.Add(BtnUpdatePlugin);
+            mainTable.Controls.Add(buttonRow, 0, 1);
+            mainTable.SetColumnSpan(buttonRow, 2);
 
             // === Bottom row: activity log (spans both columns) ===
             var logPanel = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
@@ -471,6 +500,8 @@ namespace EQ2Sharts
                 AppendLog("Queue cleared.");
                 RefreshQueueDisplay();
             };
+
+            BtnUpdatePlugin.Click += delegate { UpdatePlugin(); };
 
             LblStatus.Text = "EQ2Sharts Plugin Started";
         }
@@ -1012,6 +1043,61 @@ namespace EQ2Sharts
                 }
                 catch { }
             });
+        }
+
+        private void UpdatePlugin()
+        {
+            try
+            {
+                var pluginData = ActGlobals.oFormActMain.PluginGetSelfData(this);
+                if (pluginData == null)
+                {
+                    MessageBox.Show("Could not determine the current plugin file path.",
+                        "Update Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                var pluginPath = pluginData.pluginFile.FullName;
+                AppendLog("Downloading latest EQ2Sharts.cs from GitHub...");
+
+                string newContent;
+                using (var client = new WebClient())
+                {
+                    ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+                    newContent = client.DownloadString(
+                        "https://raw.githubusercontent.com/Maergoth/EQ2Sharts/main/EQ2Sharts.cs");
+                }
+
+                if (string.IsNullOrEmpty(newContent) || !newContent.Contains("IActPluginV1"))
+                {
+                    MessageBox.Show("Downloaded file does not appear to be a valid plugin.",
+                        "Update Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                File.WriteAllText(pluginPath, newContent, Encoding.UTF8);
+                AppendLog("Plugin file updated: " + pluginPath);
+
+                var result = MessageBox.Show(
+                    "Plugin updated successfully!\n\n" +
+                    "The plugin file has been replaced. Would you like to reload it now?\n" +
+                    "(This will disable and re-enable the plugin.)",
+                    "EQ2Sharts Updated",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Information);
+
+                if (result == DialogResult.Yes)
+                {
+                    pluginData.cbEnabled.Checked = false;
+                    pluginData.cbEnabled.Checked = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                AppendLog("Update failed: " + ex.Message);
+                MessageBox.Show("Failed to update plugin:\n" + ex.Message,
+                    "Update Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 
