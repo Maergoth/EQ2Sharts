@@ -14,7 +14,8 @@ https://discord.gg/reverb
 4. Customize the "channels" you're watching, and set the "Enqueue" and "Dequeue" text to match
 5. Activity Log can provide some hints if it's not working
 
-<img width="647" height="438" alt="image" src="https://github.com/user-attachments/assets/ae589164-71dc-467b-81b4-d2388103c29a" />
+<img width="619" height="475" alt="image" src="https://github.com/user-attachments/assets/2df11b79-50c1-4913-8a6a-720d466ebea1" />
+
 
 
 ## Features
