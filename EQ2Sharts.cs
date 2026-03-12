@@ -39,6 +39,8 @@ namespace EQ2Sharts
         private CheckBox ChkClickThrough;
         private CheckBox ChkInvertOrder;
         private CheckBox ChkShowWaitTime;
+        private CheckBox ChkPriorityBump;
+        private CheckBox ChkBumpNotification;
         private TrackBar TrkOpacity;
         private Label LblOpacityValue;
         private TrackBar TrkFontScale;
@@ -49,6 +51,8 @@ namespace EQ2Sharts
         private Button BtnFgColor;
         private TextBox TxtBgColor;
         private TextBox TxtFgColor;
+
+        private ToolTip InfoToolTip;
 
         // Overlay window
         private QueueOverlayForm Overlay;
@@ -61,6 +65,8 @@ namespace EQ2Sharts
         private void InitializeComponent()
         {
             SuspendLayout();
+
+            InfoToolTip = new ToolTip();
 
             // --- Main two-column layout ---
             var mainTable = new TableLayoutPanel
@@ -94,7 +100,7 @@ namespace EQ2Sharts
                 Text = ""
             };
 
-            var lblChannel = new Label { Text = "Channel Names (one per line):", AutoSize = true };
+            var lblChannel = CreateLabelWithInfo("Channel Names:", "One channel name per line");
             TxtChannelName = new TextBox
             {
                 Name = "txtChannelName",
@@ -104,7 +110,7 @@ namespace EQ2Sharts
                 Text = "Raid"
             };
 
-            var lblEnqueue = new Label { Text = "Enqueue Patterns (regex, one per line):", AutoSize = true };
+            var lblEnqueue = CreateLabelWithInfo("Enqueue Patterns:", "Regex patterns, one per line. Matching messages add the sender to the queue.");
             TxtEnqueuePatterns = new TextBox
             {
                 Name = "txtEnqueuePatterns",
@@ -114,7 +120,7 @@ namespace EQ2Sharts
                 Text = "^HEARTS PLZ$\r\n^HEARTS PLX$\r\n^HEARTS PLOX$"
             };
 
-            var lblDequeue = new Label { Text = "Dequeue Patterns (regex w/ capture group, one per line):", AutoSize = true };
+            var lblDequeue = CreateLabelWithInfo("Dequeue Patterns:", "Regex patterns with a (capture group) for the player name, one per line.");
             TxtDequeuePatterns = new TextBox
             {
                 Name = "txtDequeuePatterns",
@@ -168,7 +174,7 @@ namespace EQ2Sharts
             ChkClickThrough = new CheckBox
             {
                 Name = "chkClickThrough",
-                Text = "Click-Through (no titlebar)",
+                Text = "Click-Through",
                 AutoSize = true,
                 Checked = false
             };
@@ -176,7 +182,7 @@ namespace EQ2Sharts
             ChkInvertOrder = new CheckBox
             {
                 Name = "chkInvertOrder",
-                Text = "Invert (bottom to top)",
+                Text = "Invert Order",
                 AutoSize = true,
                 Checked = false
             };
@@ -185,6 +191,22 @@ namespace EQ2Sharts
             {
                 Name = "chkShowWaitTime",
                 Text = "Show Wait Time",
+                AutoSize = true,
+                Checked = false
+            };
+
+            ChkPriorityBump = new CheckBox
+            {
+                Name = "chkPriorityBump",
+                Text = "Priority Bump",
+                AutoSize = true,
+                Checked = false
+            };
+
+            ChkBumpNotification = new CheckBox
+            {
+                Name = "chkBumpNotification",
+                Text = "Bump Notification",
                 AutoSize = true,
                 Checked = false
             };
@@ -266,9 +288,11 @@ namespace EQ2Sharts
 
             rightPanel.Controls.Add(lblOverlay);
             rightPanel.Controls.Add(ChkOverlayVisible);
-            rightPanel.Controls.Add(ChkClickThrough);
-            rightPanel.Controls.Add(ChkInvertOrder);
+            rightPanel.Controls.Add(CreateCheckboxWithInfo(ChkClickThrough, "Makes the overlay click-through with no titlebar"));
+            rightPanel.Controls.Add(CreateCheckboxWithInfo(ChkInvertOrder, "Display the queue from bottom to top"));
             rightPanel.Controls.Add(ChkShowWaitTime);
+            rightPanel.Controls.Add(CreateCheckboxWithInfo(ChkPriorityBump, "Duplicate enqueue requests bump the player up one slot"));
+            rightPanel.Controls.Add(CreateCheckboxWithInfo(ChkBumpNotification, "Text-to-speech says 'bump' when a player is bumped (requires Priority Bump)"));
             rightPanel.Controls.Add(opacityRow);
             rightPanel.Controls.Add(fontScaleRow);
             rightPanel.Controls.Add(colorRow);
@@ -459,6 +483,66 @@ namespace EQ2Sharts
             LblStatus.Text = "EQ2Sharts Plugin Exited";
         }
 
+        private Control CreateLabelWithInfo(string text, string tooltip)
+        {
+            var row = new FlowLayoutPanel
+            {
+                FlowDirection = FlowDirection.LeftToRight,
+                AutoSize = true,
+                WrapContents = false,
+                Margin = new Padding(0)
+            };
+            row.Controls.Add(new Label { Text = text, AutoSize = true });
+            var info = new Label
+            {
+                Text = "\u24d8",
+                AutoSize = true,
+                ForeColor = Color.SteelBlue,
+                Cursor = Cursors.Help,
+                Margin = new Padding(2, 0, 0, 0)
+            };
+            SetInfoTooltip(info, tooltip);
+            row.Controls.Add(info);
+            return row;
+        }
+
+        private Control CreateCheckboxWithInfo(CheckBox chk, string tooltip)
+        {
+            var row = new FlowLayoutPanel
+            {
+                FlowDirection = FlowDirection.LeftToRight,
+                AutoSize = true,
+                WrapContents = false,
+                Margin = new Padding(0)
+            };
+            row.Controls.Add(chk);
+            var info = new Label
+            {
+                Text = "\u24d8",
+                AutoSize = true,
+                ForeColor = Color.SteelBlue,
+                Cursor = Cursors.Help,
+                Margin = new Padding(2, 2, 0, 0)
+            };
+            SetInfoTooltip(info, tooltip);
+            row.Controls.Add(info);
+            return row;
+        }
+
+        private void SetInfoTooltip(Control target, string tooltip)
+        {
+            target.MouseEnter += delegate
+            {
+                var pt = target.PointToScreen(Point.Empty);
+                var screenPt = PointToClient(new Point(pt.X, pt.Y - 20));
+                InfoToolTip.Show(tooltip, this, screenPt.X, screenPt.Y);
+            };
+            target.MouseLeave += delegate
+            {
+                InfoToolTip.Hide(this);
+            };
+        }
+
         private void EnsureWaitTimeTimer()
         {
             if (ChkShowWaitTime.Checked)
@@ -557,15 +641,39 @@ namespace EQ2Sharts
             {
                 if (PlayerSet.ContainsKey(name))
                 {
-                    AppendLog(string.Format("Player \"{0}\" is already in the queue.", name));
-                    return;
+                    if (ChkPriorityBump.Checked)
+                    {
+                        LinkedListNode<string> node = PlayerQueue.First;
+                        while (node != null)
+                        {
+                            if (string.Equals(node.Value, name, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (node.Previous != null)
+                                {
+                                    var prev = node.Previous;
+                                    PlayerQueue.Remove(node);
+                                    PlayerQueue.AddBefore(prev, name);
+                                    AppendLog(string.Format("Player \"{0}\" bumped up one slot.", name));
+                                    if (ChkBumpNotification.Checked)
+                                        SpeakAsync("bump");
+                                }
+                                else
+                                    AppendLog(string.Format("Player \"{0}\" is already at the top.", name));
+                                break;
+                            }
+                            node = node.Next;
+                        }
+                    }
+                    else
+                        AppendLog(string.Format("Player \"{0}\" is already in the queue.", name));
                 }
-                PlayerSet.Add(name, true);
-                EnqueueTimes[name] = DateTime.Now;
-
-                PlayerQueue.AddLast(name);
-
-                AppendLog(string.Format("Player \"{0}\" added to queue (position {1}).", name, PlayerQueue.Count));
+                else
+                {
+                    PlayerSet.Add(name, true);
+                    EnqueueTimes[name] = DateTime.Now;
+                    PlayerQueue.AddLast(name);
+                    AppendLog(string.Format("Player \"{0}\" added to queue (position {1}).", name, PlayerQueue.Count));
+                }
             }
 
             RefreshQueueDisplay();
@@ -828,6 +936,8 @@ namespace EQ2Sharts
             XmlSettings.AddControlSetting(ChkClickThrough.Name, ChkClickThrough);
             XmlSettings.AddControlSetting(ChkInvertOrder.Name, ChkInvertOrder);
             XmlSettings.AddControlSetting(ChkShowWaitTime.Name, ChkShowWaitTime);
+            XmlSettings.AddControlSetting(ChkPriorityBump.Name, ChkPriorityBump);
+            XmlSettings.AddControlSetting(ChkBumpNotification.Name, ChkBumpNotification);
             XmlSettings.AddControlSetting(TrkOpacity.Name, TrkOpacity);
             XmlSettings.AddControlSetting(TrkFontScale.Name, TrkFontScale);
             XmlSettings.AddControlSetting(TxtOverlayBounds.Name, TxtOverlayBounds);
@@ -873,6 +983,20 @@ namespace EQ2Sharts
             xWriter.WriteEndDocument();
             xWriter.Flush();
             xWriter.Close();
+        }
+
+        private void SpeakAsync(string text)
+        {
+            System.Threading.ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    var voice = Activator.CreateInstance(Type.GetTypeFromProgID("SAPI.SpVoice"));
+                    voice.GetType().InvokeMember("Speak", System.Reflection.BindingFlags.InvokeMethod, null, voice, new object[] { text });
+                    Marshal.ReleaseComObject(voice);
+                }
+                catch { }
+            });
         }
     }
 
