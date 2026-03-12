@@ -41,6 +41,7 @@ namespace EQ2Sharts
         private CheckBox ChkShowWaitTime;
         private CheckBox ChkPriorityBump;
         private CheckBox ChkBumpNotification;
+        private CheckBox ChkAutoHide;
         private TrackBar TrkOpacity;
         private Label LblOpacityValue;
         private TrackBar TrkFontScale;
@@ -211,6 +212,14 @@ namespace EQ2Sharts
                 Checked = false
             };
 
+            ChkAutoHide = new CheckBox
+            {
+                Name = "chkAutoHide",
+                Text = "Auto-Hide When Empty",
+                AutoSize = true,
+                Checked = false
+            };
+
             // Opacity: label + trackbar in a row
             var opacityRow = new FlowLayoutPanel
             {
@@ -293,6 +302,7 @@ namespace EQ2Sharts
             rightPanel.Controls.Add(ChkShowWaitTime);
             rightPanel.Controls.Add(CreateCheckboxWithInfo(ChkPriorityBump, "Duplicate enqueue requests bump the player up one slot"));
             rightPanel.Controls.Add(CreateCheckboxWithInfo(ChkBumpNotification, "Text-to-speech says 'bump' when a player is bumped (requires Priority Bump)"));
+            rightPanel.Controls.Add(CreateCheckboxWithInfo(ChkAutoHide, "Automatically hide the overlay when the queue is empty"));
             rightPanel.Controls.Add(opacityRow);
             rightPanel.Controls.Add(fontScaleRow);
             rightPanel.Controls.Add(colorRow);
@@ -383,6 +393,11 @@ namespace EQ2Sharts
                     Overlay.Show();
                 else
                     Overlay.Hide();
+            };
+
+            ChkAutoHide.CheckedChanged += delegate
+            {
+                RefreshQueueDisplay();
             };
 
             ChkClickThrough.CheckedChanged += delegate
@@ -531,16 +546,7 @@ namespace EQ2Sharts
 
         private void SetInfoTooltip(Control target, string tooltip)
         {
-            target.MouseEnter += delegate
-            {
-                var pt = target.PointToScreen(Point.Empty);
-                var screenPt = PointToClient(new Point(pt.X, pt.Y - 20));
-                InfoToolTip.Show(tooltip, this, screenPt.X, screenPt.Y);
-            };
-            target.MouseLeave += delegate
-            {
-                InfoToolTip.Hide(this);
-            };
+            InfoToolTip.SetToolTip(target, tooltip);
         }
 
         private void EnsureWaitTimeTimer()
@@ -852,6 +858,14 @@ namespace EQ2Sharts
                 items.Reverse();
 
             Overlay.UpdateQueue(items);
+
+            if (ChkAutoHide.Checked && ChkOverlayVisible.Checked)
+            {
+                if (items.Count == 0)
+                    Overlay.Hide();
+                else
+                    Overlay.Show();
+            }
         }
 
         private void AppendLog(string message)
@@ -938,6 +952,7 @@ namespace EQ2Sharts
             XmlSettings.AddControlSetting(ChkShowWaitTime.Name, ChkShowWaitTime);
             XmlSettings.AddControlSetting(ChkPriorityBump.Name, ChkPriorityBump);
             XmlSettings.AddControlSetting(ChkBumpNotification.Name, ChkBumpNotification);
+            XmlSettings.AddControlSetting(ChkAutoHide.Name, ChkAutoHide);
             XmlSettings.AddControlSetting(TrkOpacity.Name, TrkOpacity);
             XmlSettings.AddControlSetting(TrkFontScale.Name, TrkFontScale);
             XmlSettings.AddControlSetting(TxtOverlayBounds.Name, TxtOverlayBounds);
