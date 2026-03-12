@@ -26,6 +26,9 @@ https://discord.gg/reverb
 - **Wait time display** — Optional per-player wait timer shown on the overlay, updating live every second.
 - **Average wait time** — Logged to the activity log on each dequeue, tracking a running average across the session.
 - **Invert order** — Checkbox to flip the overlay display from top-to-bottom to bottom-to-top.
+- **Priority bump** — When enabled, duplicate enqueue requests bump the player up one slot instead of being ignored.
+- **Bump notification** — Text-to-speech announces "bump" when a player is bumped (requires Priority Bump).
+- **Auto-hide when empty** — The overlay automatically hides when the queue is empty and reappears when someone joins.
 - **Persistent settings** — All configuration (channels, patterns, overlay position/size, colors, checkboxes) is saved to XML and restored on reload.
 
 ## How It Works
@@ -69,6 +72,7 @@ A timestamp (`DateTime.Now`) is recorded at enqueue time. On dequeue, the elapse
 - **Click-through** mode removes the title bar and sets `WS_EX_TRANSPARENT | WS_EX_LAYERED` via `SetWindowLong`, making the window pass mouse events to whatever is underneath.
 - **Invert** reverses the list before display.
 - **Wait time** appends `(Xm Ys)` to each entry. A 1-second `Timer` triggers display refreshes while enabled.
+- **Auto-hide** hides or shows the overlay based on queue content when enabled, respecting the Show Overlay checkbox.
 
 ### Settings Persistence
 
@@ -85,6 +89,9 @@ The plugin uses ACT's `SettingsSerializer` to bind UI controls to an XML config 
 | **Click-Through** | Makes the overlay non-interactive (no title bar, passes clicks through). |
 | **Invert** | Reverses display order (bottom to top). |
 | **Show Wait Time** | Displays elapsed time next to each queued name. |
+| **Priority Bump** | Duplicate enqueue requests bump the player up one slot. |
+| **Bump Notification** | Text-to-speech says "bump" when a player is bumped (requires Priority Bump). |
+| **Auto-Hide When Empty** | Automatically hides the overlay when the queue is empty and shows it when someone joins. |
 | **Opacity** | Overlay window transparency (10–100%). |
 | **Font Scale** | Overlay text size multiplier (50–300%). |
 | **Background / Text** | Color pickers for overlay appearance. |
