@@ -14,7 +14,7 @@ namespace EQ2Sharts
 {
     public class EQ2ShartsPlugin : UserControl, IActPluginV1
     {
-        private const string PluginVersion = "1.0";
+        private const string PluginVersion = "1.01";
 
         private readonly LinkedList<string> PlayerQueue = new LinkedList<string>();
         private readonly Dictionary<string, bool> PlayerSet = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
